@@ -301,6 +301,41 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
     if (!envelope) return;
     if (envelope.syncMessage) return;
 
+    // Handle group update messages (member joins/leaves, title changes, etc.)
+    const groupInfo = envelope.dataMessage?.groupInfo;
+    if (groupInfo?.type === "UPDATE" && groupInfo.groupId) {
+      const groupName = groupInfo.groupName ?? "Signal Group";
+      const groupId = groupInfo.groupId;
+      const updates: string[] = [];
+
+      if (groupInfo.addedMembers?.length) {
+        const names = groupInfo.addedMembers
+          .map((m) => m.name ?? m.uuid?.slice(0, 8) ?? "someone")
+          .join(", ");
+        updates.push(`${names} joined the group`);
+      }
+      if (groupInfo.removedMembers?.length) {
+        const names = groupInfo.removedMembers
+          .map((m) => m.name ?? m.uuid?.slice(0, 8) ?? "someone")
+          .join(", ");
+        updates.push(`${names} left the group`);
+      }
+
+      if (updates.length > 0) {
+        const route = resolveAgentRoute({
+          cfg: deps.cfg,
+          channel: "signal",
+          accountId: deps.accountId,
+          peer: { kind: "group", id: groupId },
+        });
+        const text = `[${groupName} id:${groupId}] ${updates.join("; ")}`;
+        logVerbose(`signal group update: ${text}`);
+        const contextKey = `signal:group:update:${groupId}:${envelope.timestamp ?? Date.now()}`;
+        enqueueSystemEvent(text, { sessionKey: route.sessionKey, contextKey });
+      }
+      return;
+    }
+
     const sender = resolveSignalSender(envelope);
     if (!sender) return;
     if (deps.account && sender.kind === "phone") {

@@ -16,14 +16,27 @@ export type SignalEnvelope = {
   reactionMessage?: SignalReactionMessage | null;
 };
 
+export type SignalGroupMember = {
+  uuid?: string | null;
+  number?: string | null;
+  name?: string | null;
+};
+
+export type SignalGroupInfo = {
+  groupId?: string | null;
+  groupName?: string | null;
+  type?: "DELIVER" | "UPDATE" | "QUIT" | null;
+  addedMembers?: SignalGroupMember[] | null;
+  removedMembers?: SignalGroupMember[] | null;
+  pendingMembers?: SignalGroupMember[] | null;
+  inviterUuid?: string | null;
+};
+
 export type SignalDataMessage = {
   timestamp?: number;
   message?: string | null;
   attachments?: Array<SignalAttachment>;
-  groupInfo?: {
-    groupId?: string | null;
-    groupName?: string | null;
-  } | null;
+  groupInfo?: SignalGroupInfo | null;
   quote?: { text?: string | null } | null;
   reaction?: SignalReactionMessage | null;
 };
